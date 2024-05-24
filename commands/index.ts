@@ -1,3 +1,5 @@
+export * as annoy from './annoy'
+
 export * as setup from './setup'
 export * as bot from './bot'
 

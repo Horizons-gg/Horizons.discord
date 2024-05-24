@@ -45,6 +45,8 @@ export default function (): Promise<Discord.Client> {
                 //! Register Commands
 
                 if (_client.application) _client.application.commands.set([
+                    Commands.annoy.command,
+
                     Commands.setup.command,
                     Commands.bot.command,
 

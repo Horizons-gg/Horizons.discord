@@ -17,7 +17,7 @@ export default async (member: Discord.GuildMember) => {
 
 
 
-    const LandingChannel = member.guild.channels.cache.find(channel => channel.name == "🪂landing-pad") as Discord.TextBasedChannel
+    const LandingChannel = member.guild.channels.cache.find(channel => channel.name == "🪂joins-leaves") as Discord.TextBasedChannel
 
     if (LandingChannel) LandingChannel.send({
         embeds: [

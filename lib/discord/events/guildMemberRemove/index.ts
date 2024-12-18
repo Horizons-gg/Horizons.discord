@@ -14,7 +14,7 @@ export default (member: Discord.GuildMember | Discord.PartialGuildMember) => {
     if (member.guild.id !== Config.discord.guild) return
 
 
-    const LandingChannel = member.guild.channels.cache.find(channel => channel.name == "🪂landing-pad") as Discord.TextBasedChannel
+    const LandingChannel = member.guild.channels.cache.find(channel => channel.name == "🪂joins-leaves") as Discord.TextBasedChannel
 
     if (LandingChannel) LandingChannel.send({
         embeds: [

@@ -18,7 +18,7 @@ export async function Send(message: string, user: Discord.User) {
 
     const Guild = await GuildRaw()
 
-    const Modmail = Guild.channels.cache.find(channel => channel.name === '📬mod-mail') as Discord.GuildTextBasedChannel
+    const Modmail = Guild.channels.cache.find(channel => channel.name === '📬mail') as Discord.GuildTextBasedChannel
     if (!Modmail) return console.error('Unable to find Modmail Channel!') //todo: send error to user
 
     Modmail.send({

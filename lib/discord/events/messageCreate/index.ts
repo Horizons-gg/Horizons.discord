@@ -29,12 +29,12 @@ export default async (message: Discord.Message) => {
     if (Channel.parentId == Setup.sections.opened || Channel.parentId == Setup.sections.closed) Ticket.log(message)
 
 
-    if (Channel === Guild.channels.cache.find(channel => channel.name === '📬mod-mail')) Modmail.Respond(message, message.author)
+    if (Channel === Guild.channels.cache.find(channel => channel.name === '📬mail')) Modmail.Respond(message, message.author)
 
 
     if (message.channel.type === Discord.ChannelType.DM && !message.author.bot) {
 
-        const DevSpam = Guild.channels.cache.find(channel => channel.name === '📧dev-spam') as Discord.TextBasedChannel
+        const DevSpam = Guild.channels.cache.find(channel => channel.name === '🪵logs') as Discord.TextBasedChannel
         if (!DevSpam) return Channel.send('An error has occurred whilst trying to retrieve "DevSpam", please contact Koda for assistance.'), console.error('An error has occurred whilst trying to retrieve "DevSpam"')
         
 

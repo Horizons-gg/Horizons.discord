@@ -1,12 +1,16 @@
 import App from './'
 
+import Message from '@lib/message'
+
 import Discord from 'discord.js'
 import Ticket from './tickets'
+import Verification from './verify'
 
 
 
 export default async function (message: Discord.Message<boolean>) {
 
+    const guild = await App.guild()
     const channel = message.channel
     const user = message.author
 
@@ -21,8 +25,46 @@ export default async function (message: Discord.Message<boolean>) {
 
             data[2] = message.id
             Ticket.update(channel as Discord.TextChannel, { description: message.content })
+
+            const staff = () => {
+                switch (data[0]) {
+                    default: return App.config.support.staff.general
+                    case 'se': return App.config.support.staff.se
+                    case 'rust': return App.config.support.staff.rust
+                    case 'dayz': return App.config.support.staff.dayz
+                    case 'mc': return App.config.support.staff.mc
+                }
+            }
+
+
+            await channel.send(`>>> ### 🎫 Ticket Designation - ${Ticket.fetchService(data[0])}\n` + (data[3] === 'high' ? '@everyone' : '@here') + (staff() === null ? '' : ` <@&${staff()}>`))
             Ticket.updateData(channel as Discord.TextChannel, data)
         }
+    }
+
+
+    if (message.channel.type === Discord.ChannelType.DM && !message.author.bot) {
+
+        const DevSpam = guild.channels.cache.find(channel => channel.name === '🪵logs') as Discord.TextBasedChannel
+        if (!DevSpam) return channel.send('An error has occurred whilst trying to retrieve "DevSpam", please contact Koda for assistance.'), console.error('An error has occurred whilst trying to retrieve "DevSpam"')
+
+
+        Verification.attempt(message.author.id, message.content)
+            .then(() => {
+                message.react('✅').catch(() => { })
+                channel.send(Message({
+                    variant: 'success',
+                    title: 'Account Age Verified',
+                    description: `Your Account Age has been successfully verified!`,
+                }))
+                Message.notifyStandard(`${message.author} has successfully verified their account age!`, DevSpam, `${message.author.username} has Verified their Account Age ✅`, 'success')
+            })
+            .catch((error: string) => {
+                const Data = error.split('-')
+
+                // if (Data[0] === 'NO_SESSION') Modmail.Send(message.content, message.author)
+                if (Data[0] === 'INVALID_KEY') message.react('❌').catch(() => { }), Messages.notifyStandard(`${message.author} has entered the incorrect code to verify their account age!\n\nCode Entered by User: \`${Data[2]}\`\nValidation Code: \`${Data[1]}\``, DevSpam, `${message.author.username} Entered Incorrect Validation Code 💢`, 'warning')
+            })
     }
 
 }

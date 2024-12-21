@@ -10,6 +10,8 @@ export default {
         .setDescription('Open a New Support Ticket'),
 
     async execute(interaction: Discord.ChatInputCommandInteraction) {
+        await interaction.deferReply({ ephemeral: true })
+
         Ticket.create(interaction.user.id)
             .then(res => {
                 if (typeof res === 'string') return interaction.editReply({ content: res })

@@ -7,7 +7,7 @@ import Colors from '@lib/colors'
 
 export default function (member: Discord.GuildMember | Discord.PartialGuildMember) {
 
-    const Landing = App.channel('🪂landing-pad') as Discord.TextBasedChannel
+    const Landing = App.channel(App.config.channels.landing) as Discord.TextBasedChannel
 
     
     Landing.send({

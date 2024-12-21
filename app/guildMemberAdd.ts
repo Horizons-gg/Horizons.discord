@@ -1,4 +1,5 @@
 import App from './'
+import Verification from './verify'
 
 import Discord from 'discord.js'
 import Colors from '@lib/colors'
@@ -7,8 +8,8 @@ import Colors from '@lib/colors'
 
 export default function (member: Discord.GuildMember) {
 
-    const Landing = App.channel('🪂landing-pad') as Discord.TextBasedChannel
-    const General = App.channel('🌐general') as Discord.TextBasedChannel
+    const Landing = App.channel(App.config.channels.general) as Discord.TextBasedChannel
+    const General = App.channel(App.config.channels.landing) as Discord.TextBasedChannel
 
 
     Landing.send({
@@ -32,7 +33,7 @@ export default function (member: Discord.GuildMember) {
 
 
 
-    // const AccountAge = (new Date().valueOf() - member.user.createdAt.valueOf()) / 1000 / 60 / 60 / 24
-    // if (AccountAge < 12) Verification.initialize(member).catch(error => console.log(error))
+    const AccountAge = (new Date().valueOf() - member.user.createdAt.valueOf()) / 1000 / 60 / 60 / 24
+    if (AccountAge < 12) Verification.initialize(member).catch(error => console.log(error))
 
 }

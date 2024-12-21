@@ -10,6 +10,18 @@ export class TicketController {
 
     }
 
+    fetchService(service?: string) {
+        switch (service) {
+            case 'new': return '✨ New Ticket'
+            case 'general': return '🌐 General'
+            case 'se': return '🚀 Space Engineers'
+            case 'rust': return '🏹 Rust'
+            case 'dayz': return '🧟 DayZ'
+            case 'mc': return '🔨 Minecraft'
+            default: return undefined
+        }
+    }
+
     async fetchData(channel: Discord.TextChannel): Promise<string[]> {
         const controller = await this.fetchController(channel)
         return controller?.content.replaceAll('||', '').split('-') as string[]
@@ -70,8 +82,8 @@ export class TicketController {
             SendMessages: false,
         })
 
-        const controller = await channel.send({ content: `||new-${owner.id}-null-${new Date().getTime()}-null||` })
-        this.update(channel, { description: '\`N/A\`', service: 'new', priority: 'N/A' })
+        const controller = await channel.send({ content: `||new-${owner.id}-null-null-${new Date().getTime()}-null||` })
+        await this.update(channel, { description: '**DESCRIPTION WILL BE SET AFTER FIRST MESSAGE**', service: 'new', priority: 'low' })
         await channel.send({
             components: [
                 new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
@@ -131,18 +143,6 @@ export class TicketController {
             if (details?.priority === 'high') return '🔶 High Priority'
         }
 
-        const service = () => {
-            switch (details?.service) {
-                case 'new': return '\`✨ New Ticket\`'
-                case 'general': return '\`🌐 General\`'
-                case 'se': return '\`🚀 Space Engineers\`'
-                case 'rust': return '\`🏹 Rust\`'
-                case 'dayz': return '\`🧟 DayZ\`'
-                case 'mc': return '\`🔨 Minecraft\`'
-                default: return undefined
-            }
-        }
-
         const field = (item: number | string) => {
             try {
                 if (typeof item === 'string') {
@@ -158,6 +158,13 @@ export class TicketController {
             }
         }
 
+        if (details?.priority) {
+            let channelData = await this.fetchData(channel)
+
+            channelData[3] = details.priority
+
+            await this.updateData(channel, channelData)
+        }
 
         if (details?.service) {
             let channelData = await this.fetchData(channel)
@@ -183,7 +190,7 @@ export class TicketController {
 
                     .setFields([
                         { name: 'Ticket Owner', value: `${owner}`, inline: true },
-                        { name: 'Service Designation', value: `${service() || field(1)}`, inline: true },
+                        { name: 'Service Designation', value: `${(this.fetchService(details?.service) ? `\`${this.fetchService(details?.service)}\`` : null) || field(1)}`, inline: true },
                         { name: 'Ticket Priority', value: `${priority() || field(2)}`, inline: true },
 
                         { name: 'Created', value: `<t:${Math.floor(new Date(controller.createdTimestamp).getTime() / 1000)}:F>`, inline: true },

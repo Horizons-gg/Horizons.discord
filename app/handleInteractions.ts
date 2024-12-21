@@ -8,8 +8,6 @@ import Ticket from './tickets'
 
 
 export async function Commands(interaction: Discord.ChatInputCommandInteraction) {
-    await interaction.deferReply({ ephemeral: true })
-
     const command = interaction.commandName
     const subcommand = interaction.options.getSubcommand()
 
@@ -42,6 +40,7 @@ export async function Button(interaction: Discord.ButtonInteraction) {
     if (ext === 'ticket') switch (args[0]) {
         default: interaction.editReply({ content: `No ButtonID matching ${args[0]} was found.` })
 
+        case 'create': return Ticket.create(interaction.user.id).then((channel) => interaction.editReply(`Ticket created in ${channel}`))
         case 'open': return Ticket.open(interaction.channel as Discord.TextChannel).then(() => interaction.deleteReply())
         case 'close': return Ticket.close(interaction.channel as Discord.TextChannel).then(() => interaction.deleteReply())
 

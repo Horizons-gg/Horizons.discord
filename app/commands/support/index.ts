@@ -3,6 +3,7 @@ import Discord from 'discord.js'
 
 
 import ticket from './ticket'
+import panel from './panel'
 
 
 
@@ -12,9 +13,11 @@ export default {
         .setDescription('Commands to Seek Support in Horizons')
         .setDMPermission(false)
 
-        .addSubcommand(ticket.data),
+        .addSubcommand(ticket.data)
+        .addSubcommand(panel.data),
 
     subcommands: {
-        ticket
+        ticket,
+        panel
     }
 }

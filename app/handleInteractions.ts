@@ -48,6 +48,7 @@ export async function Button(interaction: Discord.ButtonInteraction) {
         case 'low': return Ticket.update(interaction.channel as Discord.TextChannel, { priority: 'low' }).then(() => interaction.deleteReply())
         case 'high': return Ticket.update(interaction.channel as Discord.TextChannel, { priority: 'high' }).then(() => interaction.deleteReply())
 
+        case 'cancel': return interaction.channel?.delete()
         case 'delete': return interaction.channel?.delete()
     }
 

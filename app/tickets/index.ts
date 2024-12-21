@@ -76,6 +76,25 @@ export class TicketController {
             components: [
                 new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
                     .addComponents([
+                        new Discord.ButtonBuilder()
+                            .setCustomId('ticket.cancel.1')
+                            .setLabel('Cancel Ticket')
+                            .setStyle(Discord.ButtonStyle.Secondary)
+                            .setEmoji('🚫'),
+                        new Discord.ButtonBuilder()
+                            .setCustomId('ticket.cancel.2')
+                            .setLabel('Cancel Ticket')
+                            .setStyle(Discord.ButtonStyle.Secondary)
+                            .setEmoji('🚫'),
+                        new Discord.ButtonBuilder()
+                            .setCustomId('ticket.cancel.3')
+                            .setLabel('Cancel Ticket')
+                            .setStyle(Discord.ButtonStyle.Secondary)
+                            .setEmoji('🚫'),
+                    ]),
+
+                new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                    .addComponents([
                         new Discord.StringSelectMenuBuilder()
                             .setCustomId('ticket.service')
                             .setPlaceholder('⚠️ Please Select a Service to Continue...')

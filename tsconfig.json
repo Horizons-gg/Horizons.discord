@@ -12,6 +12,7 @@
 
 		"baseUrl": ".",
 		"paths": {
+			"@config": ["config.ts"],
             "@lib/*": ["lib/*"],
             "@app/*": ["app/*"],
             "@api/*": ["api/*"],

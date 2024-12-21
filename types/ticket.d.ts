@@ -25,10 +25,9 @@ declare global {
         conclusion: string | null
 
         details: {
-            title: string
-            service: string
-            region: string
-            description: string
+            title?: string
+            service?: string
+            description?: string
         }
 
         log: {

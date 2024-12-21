@@ -75,7 +75,7 @@ typings/
 # FuseBox cache
 .fusebox/
 
-config.json
+config.ts
 cache/
 undefined/
 config.json

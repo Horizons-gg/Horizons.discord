@@ -59,11 +59,10 @@ export function initialize(user: Discord.GuildMember, time?: number): Promise<st
                 user.kick('Failed to Verify Account Age').catch(() => { })
                 Sessions.splice(index, 1)
 
-                Message({
-                    notification: true,
-                    color: 'danger',
+                Message.notify({
                     title: 'Member Kicked 💥',
-                    description: `${user} (${user.user.username}) has been kicked from the server as they failed to validate their account age in a timely manner.`
+                    description: `${user} (${user.user.username}) has been kicked from the server as they failed to validate their account age in a timely manner.`,
+                    color: 'danger',
                 })
 
             }, 1000 * 60 * Time)

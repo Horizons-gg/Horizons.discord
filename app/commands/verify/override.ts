@@ -30,7 +30,8 @@ export default {
 
         Verification.override(Target.id)
             .then(() => {
-                interaction.reply(Message({
+                interaction.reply(Message.send({
+                    ephemeral: true,
                     variant: 'success',
                     title: 'Verification Process Overridden',
                     description: `Verification Process Overridden for ${Target}!`,
@@ -55,7 +56,8 @@ export default {
                     }).then(msg => setTimeout(() => { msg.delete().catch(() => { }) }, 1000 * 60 * 5))
                 })
             })
-            .catch(error => interaction.reply(Message({
+            .catch(error => interaction.reply(Message.send({
+                ephemeral: true,
                 variant: 'error',
                 title: 'Failed to Override Account Verification',
                 description: `Failed to Override Account Verification for ${Target}!\n\`\`\`${error}\`\`\``,

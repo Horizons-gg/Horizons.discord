@@ -42,13 +42,15 @@ export default {
 
         Verification.initialize(Target, Time)
             .then(res => interaction.reply(
-                Message({
+                Message.send({
+                    ephemeral: true,
                     variant: 'success',
                     title: 'Verification Process Initiated',
                     description: `Verification Process Initiated for ${Target}\n${Target.user.username} will be kicked <t:${Math.floor((new Date().getTime() + ((Time || 15) * 60 * 1000)) / 1000)}:R> if they do not verify their account!\`\`\`Verification Code: ${res}\`\`\``,
                 })
             ))
-            .catch(error => interaction.reply(Message({
+            .catch(error => interaction.reply(Message.send({
+                ephemeral: true,
                 variant: 'error',
                 title: 'Verification Process Failed to Initiate',
                 description: `Verification Process Failed to Initiate for ${Target}\n\`\`\`${error}\`\`\``,

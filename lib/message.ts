@@ -6,47 +6,54 @@ import Colors, { Color } from './colors'
 
 
 interface MessageOptions {
-    notification?: boolean
     variant?: 'default' | 'success' | 'error'
     title: string
     description: string
     color?: Color
-    ephemeral?: boolean
     components?: Discord.APIActionRowComponent<Discord.APIMessageActionRowComponent>[]
 }
 
-
-export default function Message(options: MessageOptions): Discord.InteractionReplyOptions {
-
-    const defaultColor = () => {
-        switch (options.variant) {
-            default: return Colors.primary
-            case 'success': return Colors.success
-            case 'error': return Colors.danger
-        }
+const defaultColor = (variant: string) => {
+    switch (variant) {
+        default: return Colors.primary
+        case 'success': return Colors.success
+        case 'error': return Colors.danger
     }
+}
 
-    if (!options.notification) return {
-        ephemeral: options.ephemeral || true,
+
+
+type MessageReturnType<T extends boolean> = T extends true ? Discord.InteractionReplyOptions : Discord.MessageCreateOptions
+export function send<T extends boolean>(options: MessageOptions & { ephemeral: T }): MessageReturnType<T> {
+    return {
+        ephemeral: options.ephemeral || false,
         embeds: [
             new Discord.EmbedBuilder()
                 .setTitle(options.title)
-                .setColor(options.color ? Colors[options.color] : defaultColor())
+                .setColor(options.color ? Colors[options.color] : defaultColor(options.variant))
                 .setDescription(options.description)
         ],
         components: options.components
-    } as Discord.InteractionReplyOptions
+    } as MessageReturnType<T>
+}
 
-    const channel = App.channel(App.config.channels.general) as Discord.TextBasedChannel
-    channel.send({
+
+export async function notify(options: MessageOptions): Promise<Discord.Message> {
+    const channel = App.channel(App.config.channels.logs) as Discord.TextBasedChannel
+
+    return await channel.send({
         embeds: [
             new Discord.EmbedBuilder()
                 .setTitle(options.title)
-                .setColor(options.color ? Colors[options.color] : defaultColor())
+                .setColor(options.color ? Colors[options.color] : defaultColor(options.variant))
                 .setDescription(options.description)
         ],
         components: options.components
     })
+}
 
-    return {} as Discord.InteractionReplyOptions
+
+export default {
+    send,
+    notify
 }

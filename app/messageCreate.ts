@@ -52,18 +52,29 @@ export default async function (message: Discord.Message<boolean>) {
         Verification.attempt(message.author.id, message.content)
             .then(() => {
                 message.react('✅').catch(() => { })
-                channel.send(Message({
+                channel.send(Message.send({
                     variant: 'success',
                     title: 'Account Age Verified',
                     description: `Your Account Age has been successfully verified!`,
+                    ephemeral: false
                 }))
-                Message.notifyStandard(`${message.author} has successfully verified their account age!`, DevSpam, `${message.author.username} has Verified their Account Age ✅`, 'success')
+
+                Message.notify({
+                    variant: 'success',
+                    title: `${message.author.username} has Verified their Account Age ✅`,
+                    description: `${message.author} has successfully verified their account age!`,
+                    color: 'success'
+                })
             })
             .catch((error: string) => {
                 const Data = error.split('-')
 
                 // if (Data[0] === 'NO_SESSION') Modmail.Send(message.content, message.author)
-                if (Data[0] === 'INVALID_KEY') message.react('❌').catch(() => { }), Messages.notifyStandard(`${message.author} has entered the incorrect code to verify their account age!\n\nCode Entered by User: \`${Data[2]}\`\nValidation Code: \`${Data[1]}\``, DevSpam, `${message.author.username} Entered Incorrect Validation Code 💢`, 'warning')
+                if (Data[0] === 'INVALID_KEY') message.react('❌').catch(() => { }), Message.notify({
+                    title: `${message.author.username} Entered Incorrect Validation Code 💢`,
+                    description: `${message.author} has entered the incorrect code to verify their account age!\n\nCode Entered by User: \`${Data[2]}\`\nValidation Code: \`${Data[1]}\``,
+                    color: 'warning'
+                })
             })
     }
 

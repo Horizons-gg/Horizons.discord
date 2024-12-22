@@ -8,8 +8,8 @@ import Colors from '@lib/colors'
 
 export default function (member: Discord.GuildMember) {
 
-    const Landing = App.channel(App.config.channels.general) as Discord.TextBasedChannel
-    const General = App.channel(App.config.channels.landing) as Discord.TextBasedChannel
+    const Landing = App.channel(App.config.channels.landing) as Discord.TextBasedChannel
+    const General = App.channel(App.config.channels.general) as Discord.TextBasedChannel
 
 
     Landing.send({

@@ -5,6 +5,7 @@ import Message from '@lib/message'
 import Discord from 'discord.js'
 import Ticket from './tickets'
 import Verification from './verify'
+import Modmail from './modmail'
 
 
 
@@ -16,6 +17,8 @@ export default async function (message: Discord.Message<boolean>) {
 
     if (message.author.bot) return
 
+
+    if (channel === guild.channels.cache.get(App.config.channels.mail)) Modmail.respond(message, message.author)
 
     if (channel.type === Discord.ChannelType.GuildText) {
         if (channel.parentId === App.config.support.open || channel.parentId === App.config.support.closed) {
@@ -69,7 +72,7 @@ export default async function (message: Discord.Message<boolean>) {
             .catch((error: string) => {
                 const Data = error.split('-')
 
-                // if (Data[0] === 'NO_SESSION') Modmail.Send(message.content, message.author)
+                if (Data[0] === 'NO_SESSION') Modmail.send(message.content, message.author)
                 if (Data[0] === 'INVALID_KEY') message.react('❌').catch(() => { }), Message.notify({
                     title: `${message.author.username} Entered Incorrect Validation Code 💢`,
                     description: `${message.author} has entered the incorrect code to verify their account age!\n\nCode Entered by User: \`${Data[2]}\`\nValidation Code: \`${Data[1]}\``,

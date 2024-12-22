@@ -43,6 +43,8 @@ export class Bot {
     async startup() {
         switch (this.method) {
             case 'system': return Method.system(this)
+            case 'dayz': return Method.dayz(this)
+            case 'mc': return Method.mc(this)
 
             default: {
                 this.client.destroy()

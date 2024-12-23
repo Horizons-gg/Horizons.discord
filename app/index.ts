@@ -8,6 +8,8 @@ import messageCreate from './messageCreate'
 import guildMemberAdd from './guildMemberAdd'
 import guildMemberRemove from './guildMemberRemove'
 import channelUpdate from './channelUpdate'
+import messageUpdate from './messageUpdate'
+import voiceStateUpdate from './voiceStateUpdate'
 
 import * as Handle from './handleInteractions'
 
@@ -19,6 +21,7 @@ const client = new Discord.Client({
         Discord.GatewayIntentBits.GuildMembers,
         Discord.GatewayIntentBits.GuildMessages,
         Discord.GatewayIntentBits.GuildPresences,
+        Discord.GatewayIntentBits.GuildVoiceStates,
 
         Discord.GatewayIntentBits.MessageContent,
         Discord.GatewayIntentBits.DirectMessages,
@@ -35,9 +38,11 @@ client.login(config.discord.token).catch(console.error)
 client.on('ready', ready)
 
 client.on('messageCreate', messageCreate)
+client.on('messageUpdate', messageUpdate)
+client.on('channelUpdate', channelUpdate)
 client.on('guildMemberAdd', guildMemberAdd)
 client.on('guildMemberRemove', guildMemberRemove)
-client.on('channelUpdate', channelUpdate)
+client.on('voiceStateUpdate', voiceStateUpdate)
 
 client.on('interactionCreate', interaction => {
     if (interaction.isChatInputCommand()) return Handle.Commands(interaction)
@@ -52,6 +57,8 @@ client.on('interactionCreate', interaction => {
 const DiscordController = {
 
     config: config.discord,
+    services: config.discord.support.services,
+    colors: Colors,
 
     client: client || null,
     guild: () => client.guilds.cache.get(config.discord.guild) as Discord.Guild,
@@ -64,8 +71,6 @@ const DiscordController = {
         const guild = client.guilds.cache.get(config.discord.guild)
         return guild?.members.cache.get(id) as Discord.GuildMember
     },
-
-    colors: Colors,
 
 }
 

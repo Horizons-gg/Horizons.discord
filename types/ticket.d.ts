@@ -11,6 +11,14 @@ export { }
 declare global {
 
     interface Ticket {
+        designation?: string
+        state?: 'open' | 'closed' | 'pending'
+        priority?: 'low' | 'high'
+        created?: number
+        members?: string[]
+    }
+
+    interface TicketOld {
         _id: ObjectId
 
         state: 'open' | 'closed' | 'archived'

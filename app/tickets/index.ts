@@ -6,47 +6,72 @@ import Colors from '@lib/colors'
 
 export class TicketController {
 
-    constructor() {
+    constructor() { }
 
-    }
-
-    fetchService(service?: string) {
-        switch (service) {
-            case 'new': return '✨ New Ticket'
-            case 'general': return '🌐 General'
-            case 'se': return '🚀 Space Engineers'
-            case 'rust': return '🏹 Rust'
-            case 'dayz': return '🧟 DayZ'
-            case 'mc': return '🔨 Minecraft'
-            default: return undefined
-        }
-    }
-
-    async fetchData(channel: Discord.TextChannel): Promise<string[]> {
-        const controller = await this.fetchController(channel)
-        return controller?.content.replaceAll('||', '').split('-') as string[]
-    }
-
-    async updateData(channel: Discord.TextChannel, data: string[]): Promise<boolean> {
-        const controller = await this.fetchController(channel)
-        controller?.edit({ content: `||${data.join('-')}||` })
-        return true
-    }
-
-    async open(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
-        await channel.edit({ parent: App.config.support.open })
-        return channel
-    }
-
-    async close(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
-        await channel.edit({ parent: App.config.support.closed })
-        return channel
+    fetchService(id?: string): { id: string, name: string, role: string | null } | undefined {
+        if (id === 'new') return { id: 'new', name: '✨ New Ticket', role: null }
+        const service = App.services.find(s => id === s.id)
+        if (!service) return undefined
+        return service as { id: string, name: string, role: string | null }
     }
 
     async fetchController(channel: Discord.TextBasedChannel): Promise<Discord.Message | undefined> {
         const messages = await channel.messages.fetch({ limit: 1, after: '0' })
         return messages.first()
     }
+
+    async fetchData(channel: Discord.TextChannel): Promise<Ticket | null> {
+        const controller = await this.fetchController(channel)
+        const data = JSON.parse(controller?.content.replaceAll('||', '') || '{}')
+        if (!data) return null
+        return data
+    }
+
+    async setData(channel: Discord.TextChannel, options: Ticket): Promise<boolean | undefined> {
+        const data = await this.fetchData(channel)
+        if (!data) return false
+
+        const controller = await this.fetchController(channel)
+        return await controller?.edit({ content: `||${JSON.stringify({ ...data, ...options })}||` })
+            .then(() => true)
+            .catch(() => false)
+    }
+
+    async open(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
+        const controller = await this.fetchController(channel)
+        if (!controller) return channel
+
+        this.setData(channel, { state: 'open' }).then(() => this.update(channel))
+        return channel
+    }
+
+    async close(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
+        const controller = await this.fetchController(channel)
+        if (!controller) return channel
+
+        this.setData(channel, { state: 'closed' }).then(() => this.update(channel))
+        return channel
+    }
+
+    async setPriority(channel: Discord.TextChannel, priority: 'low' | 'high'): Promise<Discord.TextChannel> {
+        this.setData(channel, { priority }).then(() => this.update(channel))
+        return channel
+    }
+
+    async setService(channel: Discord.TextChannel, service: string): Promise<Discord.TextChannel | string> {
+        const data = await this.fetchData(channel)
+
+        const serviceData = this.fetchService(service)
+        if (!serviceData) return `Service "${service}" Not Found!`
+
+        channel.setName(channel.name.replace(channel.name.split('-')[0], service))
+        this.setData(channel, { designation: service, state: 'open' }).then(() => this.update(channel))
+
+        channel.send(`>>> ### ${this.fetchService(service)?.name}  -  ${data?.priority === 'low' ? 'Low Priority 🔷' : 'High Priority 🔶'}\n${data?.priority === 'low' ? '@here' : '@everyone'}${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`)
+
+        return channel
+    }
+
 
     async findTickets(owner: string): Promise<Discord.Collection<string, Discord.GuildBasedChannel>> {
         const guild = await App.guild()
@@ -62,14 +87,11 @@ export class TicketController {
 
 
     async create(ownerId: string): Promise<Discord.TextChannel | string> {
-
         const owner = await App.user(ownerId)
         const guild = await App.guild()
 
-
         const ownersTickets = await this.findTickets(ownerId)
         if (ownersTickets.size > 0) return 'You already have an open ticket, please close it before opening a new one.'
-
 
         const channel = await guild.channels.create({
             name: `new-${owner?.nickname || owner.user?.globalName || owner.user.username}`,
@@ -82,146 +104,86 @@ export class TicketController {
             SendMessages: false,
         })
 
-        const controller = await channel.send({ content: `||new-${owner.id}-null-null-${new Date().getTime()}-null||` })
-        await this.update(channel, { description: '**DESCRIPTION WILL BE SET AFTER FIRST MESSAGE**', service: 'new', priority: 'low' })
-        await channel.send({
-            components: [
-                new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
-                    .addComponents([
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.cancel.1')
-                            .setLabel('Cancel Ticket')
-                            .setStyle(Discord.ButtonStyle.Secondary)
-                            .setEmoji('🚫'),
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.cancel.2')
-                            .setLabel('Cancel Ticket')
-                            .setStyle(Discord.ButtonStyle.Secondary)
-                            .setEmoji('🚫'),
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.cancel.3')
-                            .setLabel('Cancel Ticket')
-                            .setStyle(Discord.ButtonStyle.Secondary)
-                            .setEmoji('🚫'),
-                    ]),
+        await channel.send(`||${JSON.stringify({ designation: 'new', state: 'pending', priority: 'low', created: new Date().getTime(), members: [] } as Ticket)}||`).then(msg => msg.pin())
 
-                new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
-                    .addComponents([
-                        new Discord.StringSelectMenuBuilder()
-                            .setCustomId('ticket.service')
-                            .setPlaceholder('⚠️ Please Select a Service to Continue...')
-                            .addOptions([
-                                { label: '🌐 General', value: 'general' },
-                                { label: '🚀 Space Engineers', value: 'se' },
-                                { label: '🏹 Rust', value: 'rust' },
-                                { label: '🧟 DayZ', value: 'dayz' },
-                                { label: '🔨 Minecraft', value: 'mc' },
-                            ]),
-                    ]),
-            ]
-        })
-        controller.pin()
-
-
+        await this.update(channel)
         return channel
-
     }
 
 
-    async update(channel: Discord.TextChannel, details?: { description?: string, service?: string, priority?: 'N/A' | 'low' | 'high' }): Promise<Discord.TextChannel | string> {
+    async update(channel: Discord.TextChannel): Promise<any> {
         if (!channel.topic) return 'Ticket Owner Not Found!'
 
-        const owner = await App.user((await this.fetchData(channel))[1])
+        const data = await this.fetchData(channel)
+        if (!data) return 'Ticket Data Not Found!'
 
         const controller = await this.fetchController(channel)
         if (!controller) return 'Controller Not Found!'
 
-
-        const priority = () => {
-            if (details?.priority === undefined) return undefined
-            if (details?.priority === 'low') return '🔷 Low Priority'
-            if (details?.priority === 'high') return '🔶 High Priority'
-        }
-
-        const field = (item: number | string) => {
-            try {
-                if (typeof item === 'string') {
-                    if (item === 'description') {
-                        if (details?.description === undefined) return controller.embeds[0].description
-                        else return details?.description
-                    }
-                }
-                else return controller.embeds[0].fields[item].value
-            }
-            catch (error) {
-                return '\`N/A\`'
-            }
-        }
-
-        if (details?.priority) {
-            let channelData = await this.fetchData(channel)
-
-            channelData[3] = details.priority
-
-            await this.updateData(channel, channelData)
-        }
-
-        if (details?.service) {
-            let channelData = await this.fetchData(channel)
-            let channelName = channel.name.split('-')
-
-            channelData[0] = details.service
-            channelName[0] = details.service
-
-            channel.edit({ name: channelName.join('-') }).catch(console.error)
-            await this.updateData(channel, channelData)
-
-            if (details.service !== 'new') await channel.permissionOverwrites.edit(owner.id, { SendMessages: true })
-        }
+        const owner = await App.user(channel.topic)
 
 
-        controller.edit({
-            embeds: [
-                new Discord.EmbedBuilder()
-                    .setTitle(channel.parent?.id === App.config.support.open ? '🔓 Ticket Opened' : '🔒 Ticket Closed')
-                    .setAuthor({ name: `${owner?.nickname || owner.user?.globalName || owner.user.username} - ${owner.id}` })
-                    .setDescription(`${field('description')}`)
-                    .setColor(channel.parent?.id === App.config.support.open ? Colors.success : Colors.danger)
+        if (data.state == 'open' && channel.parentId !== App.config.support.open) channel.setParent(App.config.support.open)
+        if (data.state == 'closed' && channel.parentId !== App.config.support.closed) channel.setParent(App.config.support.closed)
+        if (channel.name.split('-')[0] !== data.designation) channel.setName(channel.name.replace(channel.name.split('-')[0], data.designation || 'undefined'))
 
-                    .setFields([
-                        { name: 'Ticket Owner', value: `${owner}`, inline: true },
-                        { name: 'Service Designation', value: `${(this.fetchService(details?.service) ? `\`${this.fetchService(details?.service)}\`` : null) || field(1)}`, inline: true },
-                        { name: 'Ticket Priority', value: `${priority() || field(2)}`, inline: true },
 
-                        { name: 'Created', value: `<t:${Math.floor(new Date(controller.createdTimestamp).getTime() / 1000)}:F>`, inline: true },
-                        channel.parent?.id === App.config.support.closed ? { name: 'Closed', value: `<t:${Math.floor(new Date().getTime() / 1000)}:F>`, inline: true } : { name: '\u200B', value: '\u200B', inline: true },
-                    ])
+        const actions = () => {
+            switch (data.state) {
+                case 'pending': return [
+                    new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                        .addComponents([
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.cancel')
+                                .setLabel('Cancel Ticket')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('🚫'),
 
-                    .setThumbnail(owner.user.avatarURL())
-            ],
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.low')
+                                .setLabel('Low Priority')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('🔷'),
 
-            components: [
-                channel.parent?.id === App.config.support.open ? new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
-                    .addComponents([
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.close')
-                            .setLabel('Close Ticket')
-                            .setStyle(Discord.ButtonStyle.Danger)
-                            .setEmoji('🔒'),
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.high')
+                                .setLabel('High Priority')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('🔶'),
+                        ]),
+                    new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                        .addComponents([
+                            new Discord.StringSelectMenuBuilder()
+                                .setCustomId('ticket.service')
+                                .setPlaceholder('⚠️ Please Select a Service to Continue...')
+                                .addOptions(App.services.map(service => ({ label: service.name, value: service.id }))),
+                        ])
+                ]
 
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.low')
-                            .setLabel('Low Priority')
-                            .setStyle(Discord.ButtonStyle.Secondary)
-                            .setEmoji('🔷'),
+                case 'open': return [
+                    new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                        .addComponents([
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.close')
+                                .setLabel('Close Ticket')
+                                .setStyle(Discord.ButtonStyle.Danger)
+                                .setEmoji('🔒'),
 
-                        new Discord.ButtonBuilder()
-                            .setCustomId('ticket.high')
-                            .setLabel('High Priority')
-                            .setStyle(Discord.ButtonStyle.Secondary)
-                            .setEmoji('🔶'),
-                    ])
-                    :
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.low')
+                                .setLabel('Low Priority')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('🔷'),
+
+                            new Discord.ButtonBuilder()
+                                .setCustomId('ticket.high')
+                                .setLabel('High Priority')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('🔶'),
+                        ])
+                ]
+
+                case 'closed': return [
                     new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
                         .addComponents([
                             new Discord.ButtonBuilder()
@@ -242,13 +204,43 @@ export class TicketController {
                                 .setStyle(Discord.ButtonStyle.Danger)
                                 .setEmoji('🗑️'),
                         ])
-            ]
+                ]
+
+                default: return [
+                    new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                        .addComponents([
+                            new Discord.ButtonBuilder()
+                                .setCustomId('error')
+                                .setLabel('Something Went Wrong!')
+                                .setStyle(Discord.ButtonStyle.Secondary)
+                                .setEmoji('❌'),
+                        ])
+                ]
+            }
+        }
+
+
+        controller.edit({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setAuthor({ name: `${this.fetchService(data.designation)?.name} - ${owner?.nickname || owner.user?.globalName || owner.user.username}` })
+                    .setTitle(data.state === 'open' ? '🔓 Ticket Opened' : '🔒 Ticket Closed')
+                    .setColor(data.state === 'open' ? Colors.success : Colors.danger)
+                    .setThumbnail(owner.user.avatarURL())
+                    .setFields([
+                        { name: 'Ticket Owner', value: `<@${channel.topic}>`, inline: true },
+                        { name: 'Service Designation', value: `${this.fetchService(data.designation)?.name}`, inline: true },
+                        { name: 'Ticket Priority', value: data.priority === 'low' ? '🔷 Low Priority' : '🔶 High Priority', inline: true },
+
+                        { name: 'Created', value: `<t:${Math.floor(new Date(data.created || 0).getTime() / 1000)}:F>`, inline: true },
+                        { name: 'Closed', value: data.state === 'closed' ? `<t:${Math.floor(new Date().getTime() / 1000)}:F>` : '\`In Progress...\`', inline: true },
+                    ])
+
+            ],
+            components: actions()
         })
 
-        return channel
-
     }
-
 }
 
 

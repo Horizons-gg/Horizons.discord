@@ -60,6 +60,7 @@ export class TicketController {
 
     async setService(channel: Discord.TextChannel, service: string): Promise<Discord.TextChannel | string> {
         const data = await this.fetchData(channel)
+        const ownerId = channel.topic as string
 
         const serviceData = this.fetchService(service)
         if (!serviceData) return `Service "${service}" Not Found!`
@@ -68,6 +69,10 @@ export class TicketController {
         this.setData(channel, { designation: service, state: 'open' }).then(() => this.update(channel))
 
         channel.send(`>>> ### ${this.fetchService(service)?.name}  -  ${data?.priority === 'low' ? 'Low Priority 🔷' : 'High Priority 🔶'}\n${data?.priority === 'low' ? '@here' : '@everyone'}${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`)
+
+        channel.permissionOverwrites.create(ownerId, {
+            SendMessages: true,
+        })
 
         return channel
     }
@@ -83,6 +88,46 @@ export class TicketController {
         })
 
         return channels
+    }
+
+
+    async archive(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
+        const data = await this.fetchData(channel)
+        let messages: Discord.Message[] = []
+
+        let message = await channel.messages
+            .fetch({ limit: 1 })
+            .then(messagePage => (messagePage.size === 1 ? messagePage.at(0) : null))
+
+        while (message) {
+            await channel.messages
+                .fetch({ limit: 100, before: message.id })
+                .then(messagePage => {
+                    messagePage.forEach(msg => messages.push(msg))
+
+                    message = 0 < messagePage.size ? messagePage.at(messagePage.size - 1) : null
+                })
+        }
+
+        messages.reverse()
+
+        const archive = App.channel(App.config.channels.archive) as Discord.TextChannel
+        await archive.send({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle(`📂 ${channel.name} - ${new Date(channel.createdTimestamp).toLocaleString()}`)
+                    .setColor(Colors.primary)
+            ],
+            files: [
+                new Discord.AttachmentBuilder(
+                    Buffer.from(messages.map(msg => `[${new Date(msg.createdTimestamp).toLocaleString()}] (${msg.author.username}): ${msg.content}`).join('\n\n'), 'utf-8'), { 'name': `${channel.name}.txt`, description: 'Tickets' }
+                )
+            ]
+        })
+
+        channel.delete()
+        return channel
+
     }
 
 

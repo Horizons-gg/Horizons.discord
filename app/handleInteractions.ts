@@ -4,6 +4,11 @@ import Discord from 'discord.js'
 import Commands from './commands'
 
 import Ticket from './tickets'
+import Application from './application'
+import Report from './report'
+
+import ApplicationModal from './modals/application'
+import ReportModal from './modals/report'
 
 
 
@@ -23,7 +28,8 @@ export async function ModalSubmit(interaction: Discord.ModalSubmitInteraction) {
     const ext = interaction.customId.split('.')[0]
     const args = interaction.customId.split('.').slice(1)
 
-    // if (ext === 'ticket') return NewTicket(interaction)
+    if (ext === 'application') return Application(interaction)
+    if (ext === 'report') return Report(interaction)
 
     if (!ext) return interaction.reply({ content: `No ModalID matching ${ext} was found.`, ephemeral: true })
 
@@ -34,6 +40,10 @@ export async function ModalSubmit(interaction: Discord.ModalSubmitInteraction) {
 export async function Button(interaction: Discord.ButtonInteraction) {
     const ext = interaction.customId.split('.')[0]
     const args = interaction.customId.split('.').slice(1)
+
+
+    if (ext === 'application') interaction.showModal(ApplicationModal)
+    if (ext === 'report') interaction.showModal(ReportModal)
 
     if (ext === 'ticket') switch (args[0]) {
         default: return interaction.reply({ content: `No ButtonID matching ${args[0]} was found.`, ephemeral: true })
@@ -47,7 +57,9 @@ export async function Button(interaction: Discord.ButtonInteraction) {
 
         case 'cancel': return interaction.channel?.delete()
         case 'delete': return interaction.channel?.delete()
+        case 'archive': return Ticket.archive(interaction.channel as Discord.TextChannel)
     }
+
 
     if (!ext) return interaction.reply({ content: `No ButtonID matching ${ext} was found.`, ephemeral: true })
 

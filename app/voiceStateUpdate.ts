@@ -1,6 +1,6 @@
 import App from './'
 
-import Discord from 'discord.js'
+import Discord, { underline } from 'discord.js'
 import Colors from '@lib/colors'
 import Ticket from './tickets'
 
@@ -13,20 +13,23 @@ export default async function (oldState: Discord.VoiceState, newState: Discord.V
     const member = newState.member
 
 
-    if (oldState.channel?.parentId !== parent.id && newState.channel?.parentId !== parent.id) return
 
-    if (newState.channel?.id === App.config.clickNcreate) {
-        const vc = await channels.create({
-            name: `${member?.user.username} Channel`,
-            type: Discord.ChannelType.GuildVoice,
-            parent: parent.id,
-        })
+    if (newState.channel?.parentId === parent.id) {
+        if (newState.channel?.id === App.config.clickNcreate) {
+            const vc = await channels.create({
+                name: `${member?.user.username} Channel`,
+                type: Discord.ChannelType.GuildVoice,
+                parent: parent.id,
+            })
 
-        member?.voice.setChannel(vc)
+            member?.voice.setChannel(vc)
+        }
     }
 
-    if (oldState.channel?.members.size === 0 && oldState.channel?.id !== App.config.clickNcreate) {
-        oldState.channel.delete()
+    if (oldState.channel?.parentId === parent.id) {
+        if (oldState.channel?.members.size === 0 && oldState.channel?.id !== App.config.clickNcreate) {
+            oldState.channel.delete()
+        }
     }
 
 }

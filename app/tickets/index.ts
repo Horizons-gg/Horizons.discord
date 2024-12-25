@@ -70,7 +70,7 @@ export class TicketController {
 
         channel.send(`>>> ### ${this.fetchService(service)?.name}  -  ${data?.priority === 'low' ? 'Low Priority 🔷' : 'High Priority 🔶'}\n${data?.priority === 'low' ? '@here' : '@everyone'}${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`)
 
-        channel.permissionOverwrites.create(ownerId, {
+        channel.permissionOverwrites.edit(ownerId, {
             ViewChannel: true,
             SendMessages: true,
         })

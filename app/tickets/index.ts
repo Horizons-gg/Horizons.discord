@@ -15,72 +15,221 @@ export class TicketController {
         return service as { id: string, name: string, role: string | null }
     }
 
-    async fetchController(channel: Discord.TextBasedChannel): Promise<Discord.Message | undefined> {
-        const messages = await channel.messages.fetch({ limit: 1, after: '0' })
-        return messages.first()
-    }
-
-    async fetchData(channel: Discord.TextChannel): Promise<Ticket | null> {
-        const controller = await this.fetchController(channel)
-        const data = JSON.parse(controller?.content.replaceAll('||', '') || '{}')
-        if (!data) return null
-        return data
-    }
-
-    async setData(channel: Discord.TextChannel, options: Ticket): Promise<boolean | undefined> {
-        const data = await this.fetchData(channel)
-        if (!data) return false
-
-        const controller = await this.fetchController(channel)
-        return await controller?.edit({ content: `||${JSON.stringify({ ...data, ...options })}||` })
-            .then(() => true)
-            .catch(() => false)
-    }
-
-    async open(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
-        const controller = await this.fetchController(channel)
-        if (!controller) return channel
-
-        this.setData(channel, { state: 'open' }).then(() => this.update(channel))
-        return channel
-    }
-
-    async close(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
-        const controller = await this.fetchController(channel)
-        if (!controller) return channel
-
-        this.setData(channel, { state: 'closed' }).then(() => this.update(channel))
-        return channel
-    }
-
-    async setPriority(channel: Discord.TextChannel, priority: 'low' | 'high'): Promise<Discord.TextChannel> {
-        this.setData(channel, { priority }).then(() => this.update(channel))
-        return channel
-    }
-
-    async setService(channel: Discord.TextChannel, service: string): Promise<Discord.TextChannel | string> {
-        const data = await this.fetchData(channel)
-        const ownerId = channel.topic as string
-
-        const serviceData = this.fetchService(service)
-        if (!serviceData) return `Service "${service}" Not Found!`
-
-        channel.setName(channel.name.replace(channel.name.split('-')[0], service))
-        this.setData(channel, { designation: service, state: 'open' }).then(() => this.update(channel))
-
-        channel.send(`>>> ### ${this.fetchService(service)?.name}  -  ${data?.priority === 'low' ? 'Low Priority 🔷' : 'High Priority 🔶'}\n${data?.priority === 'low' ? '@here' : '@everyone'}${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`)
-
-        channel.permissionOverwrites.edit(ownerId, {
-            ViewChannel: true,
-            SendMessages: true,
+    fetchController(channel: Discord.TextChannel): Promise<Discord.Message> {
+        return new Promise(async (resolve, reject) => {
+            const controller = channel.messages.cache.get(channel.topic as string) || await channel.messages.fetch(channel.topic as string).catch(() => undefined)
+            if (!controller?.content) return reject('Ticket Controller Not Found!')
+            return resolve(controller)
         })
+    }
 
-        return channel
+    fetchData(channel: Discord.TextChannel): Promise<[Ticket, Discord.Message]> {
+        return new Promise(async (resolve, reject) => {
+            const controller = await this.fetchController(channel).catch(reject)
+            if (!controller) return
+
+            const data = JSON.parse(controller?.content.replaceAll('||', '') || '{}') as Ticket
+            if (!data) return reject('Ticket Data Not Found!')
+
+            return resolve([data, controller])
+        })
+    }
+
+    setData(channel: Discord.TextChannel, options: Ticket): Promise<boolean> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const [data, controller] = await this.fetchData(channel)
+
+                const content = `||${JSON.stringify({ ...data, ...options })}||`
+                if (controller?.content === content) return resolve(true)
+
+                await controller?.edit({ content })
+                    .then(() => resolve(true))
+                    .catch(() => reject('Failed to edit ticket data!'))
+            } catch (error) {
+                reject(error)
+            }
+        })
+    }
+
+    open(interaction: Discord.ButtonInteraction | Discord.ChatInputCommandInteraction): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            const channel = interaction.channel as Discord.TextChannel
+
+            const controller = await this.fetchController(channel).catch(reject)
+            if (!controller) return
+
+            channel.send({
+                embeds: [
+                    new Discord.EmbedBuilder()
+                        .setDescription(`🔓 Ticket opened by ${interaction.user}`)
+                        .setColor(Colors.success)
+                ]
+            })
+
+            await this.setData(channel, { state: 'open' }).then(() => this.update(channel))
+            return resolve('Ticket Opened!')
+        })
+    }
+
+    close(interaction: Discord.ButtonInteraction | Discord.ChatInputCommandInteraction): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            const channel = interaction.channel as Discord.TextChannel
+
+            const controller = await this.fetchController(channel).catch(reject)
+            if (!controller) return
+
+            channel.send({
+                embeds: [
+                    new Discord.EmbedBuilder()
+                        .setDescription(`🔒 Ticket closed by ${interaction.user}`)
+                        .setColor(Colors.danger)
+                ]
+            })
+
+            this.setData(channel, { state: 'closed' }).then(() => this.update(channel))
+            return resolve('Ticket Closed!')
+        })
+    }
+
+    addUser(interaction: Discord.ChatInputCommandInteraction): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const channel = interaction.channel as Discord.TextChannel
+
+                const [data, controller] = await this.fetchData(channel)
+
+                const member = interaction.options.getUser('user')
+                if (!member) return reject('User not found!')
+                if (data.members?.includes(member.id)) return reject('This user has already been added to the ticket!')
+                data.members?.push(member.id)
+
+                channel.permissionOverwrites.create(member.id, {
+                    ViewChannel: true,
+                    SendMessages: true
+                })
+
+                channel.send({
+                    embeds: [
+                        new Discord.EmbedBuilder()
+                            .setDescription(`🛬 ${member} has been added to the ticket by ${interaction.user}`)
+                            .setColor(Colors.info)
+                    ]
+                })
+
+                this.setData(channel, { members: data.members })
+                return resolve('User added to the ticket!')
+            } catch (error) {
+                reject(error)
+            }
+        })
+    }
+
+    removeUser(interaction: Discord.ChatInputCommandInteraction): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const channel = interaction.channel as Discord.TextChannel
+
+                const [data, controller] = await this.fetchData(channel)
+
+                const member = interaction.options.getUser('user')
+                if (!member) return reject('User not found!')
+                if (!data.members?.includes(member.id)) return reject('This user has not been added to the ticket!')
+                data.members = data.members?.filter(id => id !== member.id)
+
+                channel.permissionOverwrites.delete(member.id)
+
+                channel.send({
+                    embeds: [
+                        new Discord.EmbedBuilder()
+                            .setDescription(`🛫 ${member} has been removed from the ticket by ${interaction.user}`)
+                            .setColor(Colors.info)
+                    ]
+                })
+
+                this.setData(channel, { members: data.members })
+                return resolve('User removed from the ticket!')
+            } catch (error) {
+                reject(error)
+            }
+        })
+    }
+
+    setPriority(channel: Discord.TextChannel, priority: 'low' | 'high'): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            this.setData(channel, { priority })
+                .then(() => this.update(channel))
+                .catch(reject)
+
+            return resolve('Ticket Priority Updated!')
+        })
+    }
+
+    notify(interaction: Discord.ButtonInteraction): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const channel = interaction.channel as Discord.TextChannel
+
+                const [data, controller] = await this.fetchData(channel)
+
+                const serviceData = this.fetchService(data.designation)
+                if (!serviceData) return reject(`Service "${data.designation}" Not Found!`)
+
+                const now = new Date()
+                const nextNotify = new Date(data.notify || 0)
+                const diff = now.getTime() - nextNotify.getTime()
+
+                if (diff < 0) return reject(`You can notify staff again in <t:${Math.floor(nextNotify.getTime() / 1000)}:R>`)
+                channel.send({
+                    content: `@here ${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`,
+                    embeds: [
+                        new Discord.EmbedBuilder()
+                            .setTitle('🛎️ Staff Notification')
+                            .setColor(Colors.warning)
+                            .setDescription(`${interaction.user} has requested staff assistance!`)
+                            .setFooter({ text: `You can notify staff again in 15 minutes` })
+                    ]
+                })
+
+                this.setData(channel, { notify: now.getTime() + (1000 * 60 * 15) }).then(() => this.update(channel))
+                return resolve('Staff Notified!')
+            } catch (error) {
+                reject(error)
+            }
+        })
+    }
+
+    setService(channel: Discord.TextChannel, service: string): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const [data, controller] = await this.fetchData(channel)
+
+                const ownerId = data?.owner
+                if (!ownerId) return reject('Ticket Owner Not Found!')
+
+                const serviceData = this.fetchService(service)
+                if (!serviceData) return reject(`Service "${service}" Not Found!`)
+
+                channel.setName(channel.name.replace(channel.name.split('-')[0], service))
+                this.setData(channel, { designation: service, state: 'open' }).then(() => this.update(channel))
+
+                channel.send(`>>> ### ${this.fetchService(service)?.name}  -  ${data?.priority === 'low' ? 'Low Priority 🔷' : 'High Priority 🔶'}\n${data?.priority === 'low' ? '@here' : '@everyone'}${serviceData.role !== null ? ` <@&${serviceData.role}>` : ''}`)
+
+                channel.permissionOverwrites.edit(ownerId, {
+                    ViewChannel: true,
+                    SendMessages: true,
+                })
+
+                return resolve('Service Updated!')
+            } catch (error) {
+                reject(error)
+            }
+        })
     }
 
 
-    async findTickets(owner: string): Promise<Discord.Collection<string, Discord.GuildBasedChannel>> {
-        const guild = await App.guild()
+    findTickets(owner: string): Discord.Collection<string, Discord.GuildBasedChannel> {
+        const guild = App.guild()
         const channels = guild.channels.cache.filter(channel => {
             if (channel.type !== Discord.ChannelType.GuildText) return
             if (channel.parentId !== App.config.support.open) return
@@ -92,8 +241,10 @@ export class TicketController {
     }
 
 
-    async archive(channel: Discord.TextChannel): Promise<Discord.TextChannel> {
-        const data = await this.fetchData(channel)
+    async archive(interaction: Discord.ButtonInteraction): Promise<Discord.TextChannel> {
+        const channel = interaction.channel as Discord.TextChannel
+
+        const [data, controller] = await this.fetchData(channel)
         let messages: Discord.Message[] = []
 
         let message = await channel.messages
@@ -112,12 +263,33 @@ export class TicketController {
 
         messages.reverse()
 
+
+        let involvedStaff = messages.map(msg => msg.author.id).filter((id, index, self) => self.indexOf(id) === index)
+        
+        involvedStaff = involvedStaff.filter(id => {
+            if (id === data.owner) return false
+            if (id === App.config.client) return false
+            if (data.members?.includes(id)) return false
+            return true
+        })
+        
         const archive = App.channel(App.config.channels.archive) as Discord.TextChannel
         await archive.send({
+            content: `||${data.owner} - ${this.fetchService(data.designation)?.name} - ${new Date(channel.createdTimestamp).toLocaleString()}||`,
             embeds: [
                 new Discord.EmbedBuilder()
-                    .setTitle(`📂 ${channel.name} - ${new Date(channel.createdTimestamp).toLocaleString()}`)
+                    .setTitle(`${App.user(data.owner as string).user.username} | ${new Date(channel.createdTimestamp).toLocaleString()}`)
                     .setColor(Colors.primary)
+                    .setFields([
+                        { name: 'Service', value: `${this.fetchService(data.designation)?.name}`, inline: true },
+                        { name: 'Stats', value: `Messages: \`${messages.length}\``, inline: true },
+                        { name: 'Created', value: `<t:${Math.floor(new Date(data.created || 0).getTime() / 1000)}:F>`, inline: true },
+                        
+                        { name: 'Owner', value: `<@${data.owner}>`, inline: true },
+                        { name: 'Staff', value: `${involvedStaff.map(id => `<@${id}>`).join('\n') || 'N/A'}`, inline: true },
+                        { name: 'Members', value: `${data.members?.map(id => `<@${id}>`).join('\n') || 'N/A'}`, inline: true },
+                    ])
+                    .setFooter({text: `Archived by ${interaction.user.globalName} / ${interaction.user.username}`})
             ],
             files: [
                 new Discord.AttachmentBuilder(
@@ -128,20 +300,18 @@ export class TicketController {
 
         channel.delete()
         return channel
-
     }
 
 
     async create(ownerId: string): Promise<Discord.TextChannel | string> {
-        const owner = await App.user(ownerId)
-        const guild = await App.guild()
+        const owner = App.user(ownerId)
+        const guild = App.guild()
 
-        const ownersTickets = await this.findTickets(ownerId)
+        const ownersTickets = this.findTickets(ownerId)
         if (ownersTickets.size > 0) return 'You already have an open ticket, please close it before opening a new one.'
 
         const channel = await guild.channels.create({
             name: `new-${owner?.nickname || owner.user?.globalName || owner.user.username}`,
-            topic: owner.id,
             parent: App.config.support.open
         })
 
@@ -150,7 +320,18 @@ export class TicketController {
             SendMessages: false,
         })
 
-        await channel.send(`||${JSON.stringify({ designation: 'new', state: 'pending', priority: 'low', created: new Date().getTime(), members: [] } as Ticket)}||`).then(msg => msg.pin())
+        const controller = await channel.send(`||${JSON.stringify({
+            owner: ownerId,
+            designation: 'new',
+            state: 'pending',
+            priority: 'low',
+            created: new Date().getTime(),
+            notify: new Date().getTime() + (1000 * 60 * 15),
+            members: []
+        } as Ticket)}||`)
+        controller.pin()
+
+        await channel.setTopic(controller.id)
 
         await this.update(channel)
         return channel
@@ -158,15 +339,11 @@ export class TicketController {
 
 
     async update(channel: Discord.TextChannel): Promise<any> {
-        if (!channel.topic) return 'Ticket Owner Not Found!'
-
-        const data = await this.fetchData(channel)
+        const [data, controller] = await this.fetchData(channel)
         if (!data) return 'Ticket Data Not Found!'
 
-        const controller = await this.fetchController(channel)
-        if (!controller) return 'Controller Not Found!'
-
-        const owner = await App.user(channel.topic)
+        const owner = App.user(data.owner as string)
+        if (!owner) return 'Ticket Owner Not Found!'
 
 
         if (data.state == 'open' && channel.parentId !== App.config.support.open) channel.setParent(App.config.support.open)
@@ -216,16 +393,10 @@ export class TicketController {
                                 .setEmoji('🔒'),
 
                             new Discord.ButtonBuilder()
-                                .setCustomId('ticket.low')
-                                .setLabel('Low Priority')
+                                .setCustomId('ticket.notify')
+                                .setLabel('Request Staff')
                                 .setStyle(Discord.ButtonStyle.Secondary)
-                                .setEmoji('🔷'),
-
-                            new Discord.ButtonBuilder()
-                                .setCustomId('ticket.high')
-                                .setLabel('High Priority')
-                                .setStyle(Discord.ButtonStyle.Secondary)
-                                .setEmoji('🔶'),
+                                .setEmoji('🛎️'),
                         ])
                 ]
 
@@ -266,20 +437,29 @@ export class TicketController {
         }
 
 
+        const stateVis = (): [string, number] => {
+            switch (data.state) {
+                case 'open': return ['🔓 Ticket Opened', Colors.success]
+                case 'closed': return ['🔒 Ticket Closed', Colors.danger]
+                case 'pending': return ['🕒 Ticket Pending', Colors.secondary]
+                default: return ['❓ Error', Colors.danger]
+            }
+        }
+
         controller.edit({
             embeds: [
                 new Discord.EmbedBuilder()
                     .setAuthor({ name: `${this.fetchService(data.designation)?.name} - ${owner?.nickname || owner.user?.globalName || owner.user.username}` })
-                    .setTitle(data.state === 'open' ? '🔓 Ticket Opened' : '🔒 Ticket Closed')
-                    .setColor(data.state === 'open' ? Colors.success : Colors.danger)
+                    .setTitle(stateVis()[0])
+                    .setColor(stateVis()[1])
                     .setThumbnail(owner.user.avatarURL())
                     .setFields([
-                        { name: 'Ticket Owner', value: `<@${channel.topic}>`, inline: true },
+                        { name: 'Ticket Owner', value: `<@${data.owner}>`, inline: true },
                         { name: 'Service Designation', value: `${this.fetchService(data.designation)?.name}`, inline: true },
                         { name: 'Ticket Priority', value: data.priority === 'low' ? '🔷 Low Priority' : '🔶 High Priority', inline: true },
 
                         { name: 'Created', value: `<t:${Math.floor(new Date(data.created || 0).getTime() / 1000)}:F>`, inline: true },
-                        { name: 'Closed', value: data.state === 'closed' ? `<t:${Math.floor(new Date().getTime() / 1000)}:F>` : '\`In Progress...\`', inline: true },
+                        data.state === 'closed' ? { name: 'Closed', value: `<t:${Math.floor(new Date().getTime() / 1000)}:F>`, inline: true } : { name: '\u200B', value: '\u200B', inline: true },
                     ])
 
             ],

@@ -265,14 +265,14 @@ export class TicketController {
 
 
         let involvedStaff = messages.map(msg => msg.author.id).filter((id, index, self) => self.indexOf(id) === index)
-        
+
         involvedStaff = involvedStaff.filter(id => {
             if (id === data.owner) return false
             if (id === App.config.client) return false
             if (data.members?.includes(id)) return false
             return true
         })
-        
+
         const archive = App.channel(App.config.channels.archive) as Discord.TextChannel
         await archive.send({
             content: `||${data.owner} - ${this.fetchService(data.designation)?.name} - ${new Date(channel.createdTimestamp).toLocaleString()}||`,
@@ -284,12 +284,12 @@ export class TicketController {
                         { name: 'Service', value: `${this.fetchService(data.designation)?.name}`, inline: true },
                         { name: 'Stats', value: `Messages: \`${messages.length}\``, inline: true },
                         { name: 'Created', value: `<t:${Math.floor(new Date(data.created || 0).getTime() / 1000)}:F>`, inline: true },
-                        
+
                         { name: 'Owner', value: `<@${data.owner}>`, inline: true },
                         { name: 'Staff', value: `${involvedStaff.map(id => `<@${id}>`).join('\n') || 'N/A'}`, inline: true },
                         { name: 'Members', value: `${data.members?.map(id => `<@${id}>`).join('\n') || 'N/A'}`, inline: true },
                     ])
-                    .setFooter({text: `Archived by ${interaction.user.globalName} / ${interaction.user.username}`})
+                    .setFooter({ text: `Archived by ${interaction.user.globalName} / ${interaction.user.username}` })
             ],
             files: [
                 new Discord.AttachmentBuilder(
@@ -346,8 +346,8 @@ export class TicketController {
         if (!owner) return 'Ticket Owner Not Found!'
 
 
-        if (data.state == 'open' && channel.parentId !== App.config.support.open) channel.setParent(App.config.support.open)
-        if (data.state == 'closed' && channel.parentId !== App.config.support.closed) channel.setParent(App.config.support.closed)
+        if (data.state == 'open' && channel.parentId !== App.config.support.open) channel.setParent(App.config.support.open, { lockPermissions: false })
+        if (data.state == 'closed' && channel.parentId !== App.config.support.closed) channel.setParent(App.config.support.closed, { lockPermissions: false })
         if (channel.name.split('-')[0] !== data.designation) channel.setName(channel.name.replace(channel.name.split('-')[0], data.designation || 'undefined'))
 
 

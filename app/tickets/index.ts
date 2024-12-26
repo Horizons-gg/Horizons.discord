@@ -17,7 +17,7 @@ export class TicketController {
 
     fetchController(channel: Discord.TextChannel): Promise<Discord.Message> {
         return new Promise(async (resolve, reject) => {
-            const controller = channel.messages.cache.get(channel.topic as string) || await channel.messages.fetch(channel.topic as string).catch(() => undefined)
+            const controller = channel.messages.cache.get(channel.topic?.split('-')[0] as string) || await channel.messages.fetch(channel.topic?.split('-')[0] as string).catch(() => undefined)
             if (!controller?.content) return reject('Ticket Controller Not Found!')
             return resolve(controller)
         })
@@ -233,7 +233,7 @@ export class TicketController {
         const channels = guild.channels.cache.filter(channel => {
             if (channel.type !== Discord.ChannelType.GuildText) return
             if (channel.parentId !== App.config.support.open) return
-            if (channel.topic !== owner) return
+            if (channel.topic?.split('-')[1] !== owner) return
             return channel
         })
 
@@ -331,7 +331,7 @@ export class TicketController {
         } as Ticket)}||`)
         controller.pin()
 
-        await channel.setTopic(controller.id)
+        await channel.setTopic(`${controller.id}-${owner.id}`)
 
         await this.update(channel)
         return channel

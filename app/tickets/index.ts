@@ -6,7 +6,13 @@ import Colors from '@lib/colors'
 
 export class TicketController {
 
-    constructor() { }
+    priorityCooldown: { channel: string, time: number }[]
+
+    constructor() {
+        this.priorityCooldown = []
+    }
+
+
 
     fetchService(id?: string): { id: string, name: string, role: string | null } | undefined {
         if (id === 'new') return { id: 'new', name: '✨ New Ticket', role: null }
@@ -157,9 +163,22 @@ export class TicketController {
 
     setPriority(channel: Discord.TextChannel, priority: 'low' | 'high'): Promise<string> {
         return new Promise(async (resolve, reject) => {
+            const cooldown = this.priorityCooldown.findIndex(p => p.channel === channel.id)
+            const now = new Date()
+
+            if (cooldown !== -1) {
+                if (now.getTime() < this.priorityCooldown[cooldown].time) {
+                    return reject(`You can only update the ticket priority every 10 seconds!`)
+                } else {
+                    this.priorityCooldown.splice(cooldown, 1)
+                }
+            }
+
             this.setData(channel, { priority })
                 .then(() => this.update(channel))
                 .catch(reject)
+
+            this.priorityCooldown.push({ channel: channel.id, time: now.getTime() + (1000 * 10) })
 
             return resolve('Ticket Priority Updated!')
         })

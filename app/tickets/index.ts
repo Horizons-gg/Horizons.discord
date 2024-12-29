@@ -203,6 +203,7 @@ export class TicketController {
         return new Promise(async (resolve, reject) => {
             try {
                 const [data, controller] = await this.fetchData(channel)
+                if (data.designation !== 'new') return reject('Service can only be set for new tickets!')
 
                 const ownerId = data?.owner
                 if (!ownerId) return reject('Ticket Owner Not Found!')

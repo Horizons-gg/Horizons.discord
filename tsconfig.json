@@ -1,36 +1,14 @@
 {
-    "compilerOptions": {
+	"compilerOptions": {
 		"target": "ES2022",
-		"module": "ES2022",
-		"moduleResolution": "node",
-		
-		"allowJs": true,
-		"skipLibCheck": true,
+		"module": "ESNext",
 		"strict": true,
-		"forceConsistentCasingInFileNames": true,
 		"esModuleInterop": true,
-
-		"baseUrl": ".",
-		"paths": {
-			"@config": ["config.ts"],
-            "@lib/*": ["lib/*"],
-            "@app/*": ["app/*"],
-            "@api/*": ["api/*"],
-            "@interfaces/*": ["interfaces/*"]
-        }
+		"allowSyntheticDefaultImports": true,
+		"moduleResolution": "node",
+		"skipLibCheck": true
 	},
-
-    "ts-node": {
-		"transpileOnly": true,
-		"compilerOptions": {
-			"module": "commonjs"
-		}
-	},
-
-    "include": [
-        "**/*.ts"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+	"exclude": [
+		"node_modules"
+	]
 }

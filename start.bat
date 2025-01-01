@@ -1,1 +1,1 @@
-npm run start
+deno task start

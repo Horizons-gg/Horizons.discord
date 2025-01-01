@@ -1,9 +1,9 @@
 import Discord from 'discord.js'
-import App from '@app/index'
+import App from 'app'
 
-import Colors from '@lib/colors'
-import Message from '@lib/message'
-import Verification from '@app/verify'
+import Colors from 'lib/colors.ts'
+import Message from 'lib/messages.ts'
+import Verification from 'module/verification'
 
 
 export default {
@@ -18,24 +18,24 @@ export default {
         ),
 
     async execute(interaction: Discord.ChatInputCommandInteraction) {
-        const Guild = await App.guild()
-        const User = await App.user(interaction.user.id)
+        const Guild = App.guild()
+        const User = App.user(interaction.user.id)
         const Administrator = Guild.roles.cache.find(r => r.name == 'Administrator') as Discord.Role
 
-        if (!User || !User.roles.cache.has(Administrator.id)) return //todo: Add Failure Response
+        if (!User || !User.roles.cache.has(Administrator.id)) return
 
 
         const Target = interaction.options.getMember('target') as Discord.GuildMember
-        const GeneralChannel = Guild.channels.cache.get(App.config.channels.general) as Discord.TextBasedChannel
+        const GeneralChannel = Guild.channels.cache.get(App.config.channels.general) as Discord.TextChannel
 
         Verification.override(Target.id)
             .then(() => {
-                interaction.reply(Message.send({
+                Message.reply(interaction, {
                     ephemeral: true,
-                    variant: 'success',
                     title: 'Verification Process Overridden',
                     description: `Verification Process Overridden for ${Target}!`,
-                }))
+                    color: 'success'
+                })
 
                 Target.send({
                     embeds: [
@@ -56,11 +56,11 @@ export default {
                     }).then(msg => setTimeout(() => { msg.delete().catch(() => { }) }, 1000 * 60 * 5))
                 })
             })
-            .catch(error => interaction.reply(Message.send({
+            .catch(error => Message.reply(interaction, {
                 ephemeral: true,
-                variant: 'error',
                 title: 'Failed to Override Account Verification',
                 description: `Failed to Override Account Verification for ${Target}!\n\`\`\`${error}\`\`\``,
-            })))
+                color: 'danger'
+            }))
     }
 }

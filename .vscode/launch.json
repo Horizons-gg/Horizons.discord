@@ -1,19 +1,24 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch via NPM",
-            "type": "node",
+            "name": "Launch Deno App",
+            "type": "pwa-node",
             "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "runtimeExecutable": "npm",
+            "program": "${workspaceFolder}/index.ts", // Adjust to your entry point file
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "deno",
             "runtimeArgs": [
                 "run",
-                "start"
-            ]
+                "--inspect-brk", // Enables debugging
+                "--allow-net",
+                "--allow-env",
+                "--allow-read",
+                "--allow-write",
+                "--allow-sys" // Adjust permissions as needed
+            ],
+            "attachSimplePort": 9229,
+            "outputCapture": "std"
         }
     ]
 }

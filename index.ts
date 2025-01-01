@@ -1,6 +1,6 @@
-import App from './app'
-import Mongo from '@lib/mongo'
-
-
+import App from 'app'
 App.client
-Mongo.stats()
+
+
+import Mongo from 'mongo'
+Mongo.test()

@@ -1,0 +1,39 @@
+{
+    "nodeModulesDir": "auto",
+    "compilerOptions": {
+        "strict": true,
+        "types": [
+            "./types/global.d.ts"
+        ]
+    },
+
+    "tasks": {
+        "start": "deno run --allow-sys --allow-net --allow-env --allow-read index.ts",
+        "compile": "deno compile --allow-sys --allow-net --allow-env --allow-read --output app index.ts"
+    },
+
+    "imports": {
+        "discord.js": "npm:discord.js",
+        "mongodb": "npm:mongodb",
+        "gamedig": "npm:gamedig",
+
+        "config": "./lib/config.ts",
+        "app": "./app/index.ts",
+        "mongo": "./lib/mongo.ts",
+
+        "lib/": "./lib/",
+        "modals/": "./app/modals/",
+
+        "discord/modules": "./app/modules/index.ts",
+        "discord/events": "./app/events/index.ts",
+
+        "discord/commands": "./app/commands/index.ts",
+        "discord/buttons": "./app/interactions/buttons/index.ts",
+        "discord/modals": "./app/interactions/modals/index.ts",
+        "discord/stringSelectMenus": "./app/interactions/stringSelectMenus/index.ts",
+
+        "module/tickets": "./app/modules/Tickets/index.ts",
+        "module/verification": "./app/modules/Verification/index.ts",
+        "module/modmail": "./app/modules/Modmail/index.ts"
+    }
+}

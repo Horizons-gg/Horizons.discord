@@ -1,18 +1,12 @@
-import config from '@config'
-import Discord, { Collection } from 'discord.js'
+import config from 'config'
+import Discord from 'discord.js'
 
-import Colors from '@lib/colors'
+import Colors from 'lib/colors.ts'
 
-import ready from './ready'
-import messageCreate from './messageCreate'
-import guildMemberAdd from './guildMemberAdd'
-import guildMemberRemove from './guildMemberRemove'
-import channelUpdate from './channelUpdate'
-import messageUpdate from './messageUpdate'
-import voiceStateUpdate from './voiceStateUpdate'
-
-import * as Handle from './handleInteractions'
-
+import Events from 'discord/events'
+import Modules from 'discord/modules'
+import ready from './ready.ts'
+import * as Handle from './handleInteractions.ts'
 
 
 const client = new Discord.Client({
@@ -37,25 +31,38 @@ client.login(config.discord.token).catch(console.error)
 
 client.on('ready', ready)
 
-client.on('messageCreate', messageCreate)
-client.on('messageUpdate', messageUpdate)
-client.on('channelUpdate', channelUpdate)
-client.on('guildMemberAdd', guildMemberAdd)
-client.on('guildMemberRemove', guildMemberRemove)
-client.on('voiceStateUpdate', voiceStateUpdate)
-
 client.on('interactionCreate', interaction => {
     if (interaction.isChatInputCommand()) return Handle.Commands(interaction)
+    if (interaction.isButton()) return Handle.Button(interaction)
     if (interaction.isModalSubmit()) return Handle.ModalSubmit(interaction)
     if (interaction.isStringSelectMenu()) return Handle.StringSelectMenu(interaction)
-    if (interaction.isButton()) return Handle.Button(interaction)
 })
 
+const originalEmit = client.emit.bind(client)
+client.emit = function <K extends keyof Discord.ClientEvents>(event: K, ...args: Discord.ClientEvents[K]) {
+    try {
+        Events[event](...args)
+    } catch {
+        // No event handler
+    }
+
+    return originalEmit(event, ...args)
+}
+
+for (const mod in Modules) {
+    try {
+        Modules[mod](client)
+        console.log(`Successfully mounted "${mod}"`)
+        continue
+    } catch {
+        console.warn(`Failed to mount "${mod}", skipping...`)
+        continue
+    }
+}
 
 
 
 const DiscordController = {
-
     config: config.discord,
     services: config.discord.support.services,
     colors: Colors,
@@ -71,7 +78,6 @@ const DiscordController = {
         const guild = client.guilds.cache.get(config.discord.guild)
         return guild?.members.cache.get(id) as Discord.GuildMember
     },
-
 }
 
 export default DiscordController

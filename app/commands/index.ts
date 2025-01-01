@@ -1,19 +1,26 @@
-import support from './support'
-import ticket from './ticket'
-import verify from './verify'
+import support from './support/index.ts'
+import ticket from './ticket/index.ts'
+import verify from './verify/index.ts'
+
+import joke from './joke/index.ts'
 
 
 
-export default {
-    commands: [
-        support.data,
-        ticket.data,
-        verify.data,
-    ],
+const commands = [
+    support.data,
+    ticket.data,
+    verify.data,
 
-    lib: {
-        support,
-        ticket,
-        verify,
-    }
+    joke.data,
+]
+
+const response: { [key: string]: any } = {
+    support,
+    ticket,
+    verify,
+
+    joke,
 }
+
+
+export { commands, response }

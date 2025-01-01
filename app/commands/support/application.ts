@@ -1,6 +1,6 @@
 import Discord from 'discord.js'
 
-import Modal from '../../modals/application'
+import Modal from 'modals/application.ts'
 
 
 

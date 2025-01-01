@@ -1,9 +1,7 @@
-import App from '@app/index'
 import Discord from 'discord.js'
 
-
-import start from './start'
-import override from './override'
+import start from './start.ts'
+import override from './override.ts'
 
 
 

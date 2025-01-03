@@ -10,6 +10,8 @@ export default function ClickAndCreate(client: Discord.Client) {
         const member = newState.member
 
 
+        if (!member) return
+
 
         if (newState.channel?.parentId === parent.id) {
             if (newState.channel?.id === App.config.clickNcreate) {
@@ -18,6 +20,9 @@ export default function ClickAndCreate(client: Discord.Client) {
                     type: Discord.ChannelType.GuildVoice,
                     parent: parent.id,
                 })
+
+                vc.permissionOverwrites.create(member, { Connect: true })
+                vc.send(`${member}\n>>> Hey ${member?.user.username}, welcome to your personal voice channel!\n\nIf you would like to modify this channel such as its name, user limit, or access, use the \`/vc\` command.`)
 
                 member?.voice.setChannel(vc)
             }

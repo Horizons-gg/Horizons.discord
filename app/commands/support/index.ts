@@ -1,11 +1,9 @@
-import App from '@app/index'
 import Discord from 'discord.js'
 
-
-import ticket from './ticket'
-import panel from './panel'
-import application from './application'
-import report from './report'
+import ticket from './ticket.ts'
+import panel from './panel.ts'
+import application from './application.ts'
+import report from './report.ts'
 
 
 

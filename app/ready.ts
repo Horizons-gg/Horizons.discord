@@ -1,11 +1,10 @@
-import App from './'
-import config from '@config'
+import App from 'app'
+import config from 'config'
 
 import Discord from 'discord.js'
-import Commands from './commands'
-import InitializeBots from './bots'
+import { commands } from 'discord/commands'
 
-import { NumberWithCommas } from '@lib/util'
+import { NumberWithCommas } from 'lib/util.ts'
 
 
 
@@ -13,7 +12,7 @@ export default async function (client: Discord.Client) {
 
     console.info(`App Logged in as ${client.user?.tag}`)
 
-    await App.client.application?.commands.set(Commands.commands).then(() => console.info(`Slash Commands Successfully Registered`))
+    await App.client.application?.commands.set(commands).then(() => console.info(`Slash Commands Successfully Registered`))
 
 
     let Status = true
@@ -27,8 +26,5 @@ export default async function (client: Discord.Client) {
         }), Status = !Status
     }
     setInterval(SwitchStatus, 1000 * 15), SwitchStatus()
-
-
-    InitializeBots()
 
 }

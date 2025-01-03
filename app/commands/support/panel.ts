@@ -1,7 +1,5 @@
 import Discord from 'discord.js'
-import Colors from '@lib/colors'
-
-import Ticket from '@app/tickets'
+import Colors from 'lib/colors.ts'
 
 
 
@@ -42,28 +40,28 @@ export default {
                             .setColor(Colors.success)
                     ],
 
-                        components: [
-                            new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
-                                .addComponents(
-                                    new Discord.ButtonBuilder()
-                                        .setCustomId('ticket.create')
-                                        .setLabel('Support Ticket')
-                                        .setStyle(Discord.ButtonStyle.Success)
-                                        .setEmoji('🎫'),
+                    components: [
+                        new Discord.ActionRowBuilder<Discord.MessageActionRowComponentBuilder>()
+                            .addComponents(
+                                new Discord.ButtonBuilder()
+                                    .setCustomId('ticket.create')
+                                    .setLabel('Support Ticket')
+                                    .setStyle(Discord.ButtonStyle.Success)
+                                    .setEmoji('🎫'),
 
-                                    new Discord.ButtonBuilder()
-                                        .setCustomId('application.create')
-                                        .setLabel('Staff Application')
-                                        .setStyle(Discord.ButtonStyle.Primary)
-                                        .setEmoji('📝'),
+                                new Discord.ButtonBuilder()
+                                    .setCustomId('application.create')
+                                    .setLabel('Staff Application')
+                                    .setStyle(Discord.ButtonStyle.Primary)
+                                    .setEmoji('📝'),
 
-                                    new Discord.ButtonBuilder()
-                                        .setCustomId('report.create')
-                                        .setLabel('Report Member')
-                                        .setStyle(Discord.ButtonStyle.Danger)
-                                        .setEmoji('⚠️')
-                                )
-                        ]
+                                new Discord.ButtonBuilder()
+                                    .setCustomId('report.create')
+                                    .setLabel('Report Member')
+                                    .setStyle(Discord.ButtonStyle.Danger)
+                                    .setEmoji('⚠️')
+                            )
+                    ]
                 }
 
                 // case 'support': return
@@ -71,6 +69,7 @@ export default {
         }
 
         if (noreply) {
+            if (!interaction.channel?.isSendable()) return
             await interaction.channel?.send(variant())
             interaction.deleteReply()
         } else {

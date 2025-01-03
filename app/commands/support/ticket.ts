@@ -1,6 +1,6 @@
 import Discord from 'discord.js'
 
-import Ticket from '@app/tickets'
+import Ticket from 'module/tickets'
 
 
 

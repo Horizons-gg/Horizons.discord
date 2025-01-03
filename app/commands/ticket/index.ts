@@ -1,11 +1,10 @@
-import App from '@app/index'
 import Discord from 'discord.js'
 
 
-import open from './open'
-import close from './close'
-import add from './add'
-import remove from './remove'
+import open from './open.ts'
+import close from './close.ts'
+import add from './add.ts'
+import remove from './remove.ts'
 
 
 

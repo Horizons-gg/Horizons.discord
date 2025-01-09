@@ -1,4 +1,5 @@
 import Discord from 'discord.js'
+import App from 'app'
 import Ticket from "module/tickets"
 
 
@@ -17,8 +18,8 @@ export default function TicketButtons(interaction: Discord.ButtonInteraction, ar
         case 'high': return Ticket.setPriority(interaction.channel as Discord.TextChannel, 'high').then(() => interaction.deferUpdate()).catch(msg => interaction.reply({ content: msg, ephemeral: true }))
 
         case 'cancel': return interaction.channel?.delete()
-        case 'delete': return interaction.channel?.delete()
-        case 'archive': return Ticket.archive(interaction)
+        case 'delete': return App.user(interaction.user.id).roles.cache.has(App.config.roles.staff) ? interaction.channel?.delete() : interaction.reply({ content: `You do not have permission to delete this channel.`, ephemeral: true })
+        case 'archive': return App.user(interaction.user.id).roles.cache.has(App.config.roles.staff) ? Ticket.archive(interaction) : interaction.reply({ content: `You do not have permission to archive this channel.`, ephemeral: true })
     }
 
 }
